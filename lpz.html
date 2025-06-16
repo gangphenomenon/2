@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>라파스 리뷰 분석</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutral Harmony with Blue Accents -->
+    <!-- Application Structure Plan: The SPA is designed as a four-part dashboard to guide the user from the 'what' to the 'so what'. Section 1 ('At a Glance') provides a high-level quantitative summary. Section 2 ('Customer Charm Points') allows interactive exploration of the 'why' behind the high scores through clickable themes. Section 3 ('Opportunities for Excellence') reframes negatives as actionable improvement areas. Section 4 ('Strategic Conclusion') synthesizes all findings into actionable business insights. This thematic, top-down structure prioritizes user exploration and understanding over a rigid, linear report format, making the insights more accessible and impactful. -->
+    <!-- Visualization & Content Choices: 1. Review Score Distribution (Goal: Inform sentiment) -> Donut Chart (Chart.js) with hover interaction to quickly show the overwhelming positive majority. 2. Positive Feedback Themes (Goal: Organize/Explain) -> Interactive tabbed cards (HTML/JS) for user-driven exploration of qualitative data. 3. Improvement Areas (Goal: Inform non-alarmingly) -> 3-column static card layout (HTML/Tailwind) to present issues as structured, manageable points. 4. Key Metrics (Goal: Inform) -> Large typography KPI cards (HTML/Tailwind) to highlight headline numbers. This approach uses the best tool for each communication goal, ensuring clarity and engagement. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 350px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .tab-active {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+    </style>
+</head>
+<body class="bg-stone-100 text-stone-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-stone-900">라파스 고객 리뷰 분석 -강현상-</h1>
+            <p class="mt-4 text-lg text-stone-600">고객의 목소리를 통해 탐색하는 성장 기회 및 요인</p>
+        </header>
+
+        <main>
+            <section id="overview" class="mb-16">
+                <div class="text-center mb-10">
+                    <h2 class="text-3xl font-bold text-stone-900">한눈에 보는 고객 만족도</h2>
+                    <p class="mt-3 text-stone-600 max-w-3xl mx-auto">라파스에 대한 고객들의 전반적인 반응을 핵심 지표와 차트를 통해 요약. 압도적으로 긍정적인 평가를 받은 현황을 직관적으로 확인하고 고객 만족도의 수준을 가늠해볼 수 있음.</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <div class="grid grid-cols-2 gap-4 text-center">
+                        <div class="bg-white p-6 rounded-lg shadow">
+                            <h3 class="text-lg font-semibold text-stone-600">총 리뷰 수</h3>
+                            <p class="text-4xl font-bold text-blue-700 mt-2">30</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow">
+                            <h3 class="text-lg font-semibold text-stone-600">5점 만점 리뷰</h3>
+                            <p class="text-4xl font-bold text-blue-700 mt-2">93.3%</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow col-span-2">
+                            <h3 class="text-lg font-semibold text-stone-600">평균 리뷰 점수</h3>
+                            <p class="text-5xl font-bold text-blue-700 mt-2">4.93 / 5</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <div class="chart-container">
+                            <canvas id="reviewScoreChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="positive-feedback" class="mb-16">
+                 <div class="text-center mb-10">
+                    <h2 class="text-3xl font-bold text-stone-900">고객들이 사랑한 라파스가구의 매력</h2>
+                    <p class="mt-3 text-stone-600 max-w-3xl mx-auto">높은 점수 뒤에 숨겨진 구체적인 만족 요인들을 탐색. 아래 각 테마를 클릭하여 고객들이 어떤 부분에서 큰 만족을 느꼈는지 생생한 후기와 함께 확인. (클릭하여 해당 내용에 대한 리뷰를 확인하세요.)</p>
+                </div>
+
+                <div id="theme-tabs" class="flex flex-wrap justify-center gap-2 md:gap-4 mb-8">
+                </div>
+
+                <div id="theme-content" class="bg-white p-6 md:p-8 rounded-lg shadow-lg min-h-[300px] transition-all duration-300">
+                </div>
+            </section>
+            
+            <section id="improvement-areas" class="mb-16">
+                 <div class="text-center mb-10">
+                    <h2 class="text-3xl font-bold text-stone-900">개선 피드백</h2>
+                    <p class="mt-3 text-stone-600 max-w-3xl mx-auto">압도적인 긍정 평가 속에서도 일부 고객들이 겪었던 사소한 불편함들을 확인. 이는 부정적인 요소라기보다, 완벽에 가까운 고객 경험을 제공하기 위한 소중한 개선 기회.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="bg-white p-6 rounded-lg shadow transition hover:shadow-xl">
+                        <h3 class="text-xl font-bold mb-3 text-blue-700">🚚 배송 물류</h3>
+                        <p class="text-stone-600">일부 원격 지역에서 배송이 다소 지연되는 경우가 있었음. 대부분 친절한 서비스로 상쇄되었지만 배송 시간 예측 정확도를 높이면 만족도를 더욱 상승 가능.</p>
+                        <blockquote class="mt-4 border-l-4 border-stone-200 pl-4 text-sm text-stone-500 italic">"배송기간이 오래 걸렸습니다. 강원도라 그런가요(3주 걸렸어요)"</blockquote>
+                    </div>
+                     <div class="bg-white p-6 rounded-lg shadow transition hover:shadow-xl">
+                        <h3 class="text-xl font-bold mb-3 text-blue-700">✨ 주문 및 제품 디테일</h3>
+                        <p class="text-stone-600">주문 사양(스위치 위치 등)과 미세한 차이가 있거나, 배송 후 작은 나무 가루가 발견되는 등 사소한 문제가 있었음. 최종 검수 과정을 강화하면 완벽한 경험을 제공할 수 있음.</p>
+                         <blockquote class="mt-4 border-l-4 border-stone-200 pl-4 text-sm text-stone-500 italic">"단 전기코드스위치를 마주봤을때 왼편이라고 말씀드렸는데 오른쪽으로 작업해 오셔서 별 하나 뺐어요"</blockquote>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow transition hover:shadow-xl">
+                        <h3 class="text-xl font-bold mb-3 text-blue-700">🌲 초기 원목 향</h3>
+                        <p class="text-stone-600">제품 수령 초기에 자연스러운 나무 향이 나는 경우가 있음. 고객들은 이를 '진짜 원목'의 증거로 긍정적으로 인식했으며, 며칠 환기 후 사라졌다고 함. 사전 안내로 기대 관리가 가능.</p>
+                        <blockquote class="mt-4 border-l-4 border-stone-200 pl-4 text-sm text-stone-500 italic">"처음에는 약간의 자연스러운 나무 향이 나는데, 2~3일 정도 환기해 주니 금방 사라졌습니다."</blockquote>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="conclusion" class="bg-stone-800 text-white rounded-2xl shadow-xl p-6 md:p-10 mb-12">
+                <h2 class="text-3xl font-bold text-center mb-2">성장을 위한 활용 전략</h2>
+                <p class="text-center text-stone-300 mb-10 max-w-2xl mx-auto">
+                    고객의 목소리에서 도출된 인사이트는 미래 성장을 위한 명확한 방향을 제시.
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div class="flex flex-col items-center text-center">
+                        <div class="bg-blue-500 p-4 rounded-full text-3xl mb-4">🌳</div>
+                        <h3 class="font-bold text-lg">인사이트</h3>
+                        <p class="text-stone-300 h-16">"100% 원목" 품질이 핵심 차별점</p>
+                        <div class="w-px h-8 bg-blue-500 my-2"></div>
+                        <h3 class="font-bold text-lg">전략</h3>
+                        <p class="text-stone-300">모든 마케팅에서 원목 가치와 장인정신 강조</p>
+                    </div>
+                    <div class="flex flex-col items-center text-center">
+                        <div class="bg-blue-500 p-4 rounded-full text-3xl mb-4">🤝</div>
+                        <h3 class="font-bold text-lg">인사이트</h3>
+                        <p class="text-stone-300 h-16">탁월한 고객 서비스가 브랜드 자산</p>
+                        <div class="w-px h-8 bg-blue-500 my-2"></div>
+                        <h3 class="font-bold text-lg">전략</h3>
+                        <p class="text-stone-300">서비스 우수성을 마케팅에 활용하여 신뢰 구축</p>
+                    </div>
+                    <div class="flex flex-col items-center text-center">
+                        <div class="bg-blue-500 p-4 rounded-full text-3xl mb-4">💎</div>
+                        <h3 class="font-bold text-lg">인사이트</h3>
+                        <p class="text-stone-300 h-16">매트리스, 숨겨진 잠재적 성장 동력</p>
+                        <div class="w-px h-8 bg-blue-500 my-2"></div>
+                        <h3 class="font-bold text-lg">전략</h3>
+                        <p class="text-stone-300">"꿀잠" 경험을 강조하며 번들 판매 및 교차 판매 강화</p>
+                    </div>
+                    <div class="flex flex-col items-center text-center">
+                        <div class="bg-blue-500 p-4 rounded-full text-3xl mb-4">🚀</div>
+                        <h3 class="font-bold text-lg">인사이트</h3>
+                        <p class="text-stone-300 h-16">사소한 운영 이슈 개선으로 완벽 추구 가능</p>
+                        <div class="w-px h-8 bg-blue-500 my-2"></div>
+                        <h3 class="font-bold text-lg">전략</h3>
+                        <p class="text-stone-300">품질 관리(QC) 강화 및 물류 최적화를 통해 충성도 극대화</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="text-center mt-16 py-6 border-t border-stone-200">
+            <p class="text-stone-500 text-sm">저장 및 유포를 금합니다. -강현상-</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const positiveFeedbackData = {
+                quality: {
+                    title: '품질과 장인정신',
+                    icon: '🏆',
+                    summary: '고객들은 100% 원목 프레임의 견고한 품질과 튼튼함, 깔끔한 마감에 대해 가장 높은 만족도를 보였음. 이는 타제품과의 핵심적인 차별점으로 인식됨.',
+                    quotes: [
+                        "100% 수작업 원목침대 프레임 – 맞춤 제작의 정석!",
+                        "튼튼하고 매트리스 밀림방지도 있어서 만족 10000% 입니다.",
+                        "원목 등급이 높아서 그런지 시간이 지나도 변형 없이 튼튼하게 사용할 수 있을 것 같아요"
+                    ]
+                },
+                design: {
+                    title: '디자인과 미학',
+                    icon: '🎨',
+                    summary: '방 분위기를 아늑하고 고급스럽게 만들어주는 자연스러운 디자인에 대한 칭찬이 많았음. 어떤 가구와도 잘 어울리는 범용성이 장점으로 꼽힘.',
+                    quotes: [
+                        "방 분위기가 한층 더 아늑하고 고급스러워 보입니다.",
+                        "깔끔하고 예뻐요. 원목이라 고급져요~",
+                        "월넛색이 많이 진하지 않으면서 고급스럽고 다른 가구와도 잘 어울리네요"
+                    ]
+                },
+                functionality: {
+                    title: '기능성과 편의성',
+                    icon: '💡',
+                    summary: '프레임에 통합된 조명과 위치 조절이 가능한 콘센트는 "작지만 큰 차이"를 만드는 요소로, 고객들의 실질적인 편의성을 크게 높여줌.',
+                    quotes: [
+                        "허브 콘센트의 위치를 조절할 수 있어서...사용하기가 훨씬 편리하더라고요.",
+                        "콘센트 있는거 너무 편해요 없으면 어쩔뻔....",
+                        "작은 디테일까지 사용자의 편의를 고려한 점이 정말 마음에 들었습니다"
+                    ]
+                },
+                service: {
+                    title: '고객 서비스와 배송',
+                    icon: '😊',
+                    summary: '구매 상담부터 배송, 설치까지 모든 과정에서 경험한 직원들의 친절함과 전문성은 고객 만족의 핵심 요소. 이는 작은 문제가 발생했을 때 강력한 완충제 역할.',
+                    quotes: [
+                        "판매자분이 굉장히 친절하시고 문의사항에도 적극적으로 응대를 잘해주십니다.",
+                        "진심 서비스 만족!!!!!!!! 빠른응대!!!!!!!!!!!!!",
+                        "배송 기사님도 오시기 전부터 연락 꼼꼼하게 주시고 진짜 친절하셨어요"
+                    ]
+                },
+                value: {
+                    title: '가격 대비 가치',
+                    icon: '💰',
+                    summary: '고객들은 제시된 가격에 비해 월등히 높은 품질을 경험했다고 평가. "가성비"를 넘어선 "가심비"를 충족시키는 제품으로 인식.',
+                    quotes: [
+                        "이만한 가격에 이런 퀄리티는 못본거같네요",
+                        "최저가로 이런 퀄리티라니 너무 잘 산 것 같아요!",
+                        "가격대비 퀄리티가 너무 좋네요"
+                    ]
+                },
+                mattress: {
+                    title: '숨은 보석, 매트리스',
+                    icon: '💎',
+                    summary: '프레임과 함께 구매한 매트리스는 기대 이상의 편안함으로 "꿀잠"을 선사하며 고객들에게 예상치 못한 큰 만족감을 줌. 이는 중요한 추가적인 가치 제안.',
+                    quotes: [
+                        "매트리스도 같이 샀는데...허리가 좀 개운하다고 하네요.",
+                        "매트리스 너무 편하고 좋아요~~^^.",
+                        "제가 이렇게 쓰는 이유도 사실 매트리스 때문이에요 ㅎㅎ"
+                    ]
+                }
+            };
+
+            const ctx = document.getElementById('reviewScoreChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['5점 리뷰', '4점 리뷰'],
+                    datasets: [{
+                        label: '리뷰 분포',
+                        data: [28, 2],
+                        backgroundColor: [
+                            'rgba(0, 196, 245, 96)', // blue-500
+                            'rgba(0, 245, 214, 96)'  // blue-400
+                        ],
+                        borderColor: [
+                            'rgba(0, 196, 245, 96)', // blue-500
+                            'rgba(0, 245, 214, 96)'  // blue-400
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                             labels: {
+                                font: {
+                                    size: 14,
+                                    family: "'Noto Sans KR', sans-serif"
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                        const percentage = (context.raw / total * 100).toFixed(1);
+                                        label += `${context.raw}개 (${percentage}%)`;
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const tabsContainer = document.getElementById('theme-tabs');
+            const contentContainer = document.getElementById('theme-content');
+
+            function updateContent(themeKey) {
+                const theme = positiveFeedbackData[themeKey];
+                
+                contentContainer.innerHTML = `
+                    <h3 class="text-2xl font-bold mb-4 flex items-center"><span class="text-3xl mr-3">${theme.icon}</span> ${theme.title}</h3>
+                    <p class="text-stone-700 mb-6">${theme.summary}</p>
+                    <div class="space-y-3">
+                        ${theme.quotes.map(quote => `
+                            <blockquote class="border-l-4 border-blue-700 bg-stone-50 p-3 rounded-r-lg">
+                                <p class="text-stone-600 italic">"${quote}"</p>
+                            </blockquote>
+                        `).join('')}
+                    </div>
+                `;
+                
+                document.querySelectorAll('#theme-tabs button').forEach(button => {
+                    button.classList.remove('bg-blue-700', 'text-white', 'tab-active');
+                    button.classList.add('bg-white', 'text-stone-700');
+                    if (button.dataset.theme === themeKey) {
+                        button.classList.add('bg-blue-700', 'text-white', 'tab-active');
+                        button.classList.remove('bg-white', 'text-stone-700');
+                    }
+                });
+            }
+
+            Object.keys(positiveFeedbackData).forEach(key => {
+                const theme = positiveFeedbackData[key];
+                const button = document.createElement('button');
+                button.dataset.theme = key;
+                button.className = 'px-4 py-2 text-sm md:px-6 md:py-3 md:text-base font-semibold rounded-lg shadow-sm transition-all duration-200';
+                button.textContent = theme.title;
+                tabsContainer.appendChild(button);
+            });
+            
+            tabsContainer.addEventListener('click', (e) => {
+                if(e.target.tagName === 'BUTTON') {
+                    const themeKey = e.target.dataset.theme;
+                    if (themeKey) {
+                        updateContent(themeKey);
+                    }
+                }
+            });
+
+            updateContent('quality');
+        });
+    </script>
+</body>
+</html>
